@@ -1,6 +1,5 @@
 use std::{
-    borrow::Cow, cell::RefCell, collections::HashMap, io::Write, rc::Rc, thread,
-    time::Duration,
+    borrow::Cow, cell::RefCell, collections::HashMap, io::Write, rc::Rc, thread, time::Duration,
 };
 
 use chrono::{Datelike, Timelike};
@@ -45,7 +44,11 @@ where
     Output: Write,
     HttpClient: HPIHttpClient,
 {
-    pub fn new(output: Output, http_client: HttpClient, environment_variables: HashMap<String, String>) -> Self {
+    pub fn new(
+        output: Output,
+        http_client: HttpClient,
+        environment_variables: HashMap<String, String>,
+    ) -> Self {
         Self {
             http_client,
             output,
@@ -329,7 +332,11 @@ where
                 "Nun sind Sie reich, sie wurden gesponst!",
             ))),
             AnalyzedCallBase::Ident("Umgebungsvariablen") => {
-                let inner = self.environment_variables.iter().map(|(key, value)| (key.clone(), Value::String(value.clone()))).collect();
+                let inner = self
+                    .environment_variables
+                    .iter()
+                    .map(|(key, value)| (key.clone(), Value::String(value.clone())))
+                    .collect();
                 Ok(Value::Speicherbox(inner))
             }
             AnalyzedCallBase::Ident(func_name) => {
@@ -414,6 +421,10 @@ where
 
     fn visit_while_stmt(&mut self, node: &AnalyzedWhileStmt<'src>) -> StmtResult {
         while self.visit_expression(&node.cond)?.unwrap_bool() {
+            // artificially slow down any loops so that
+            // the service is not overloaded easily
+            thread::sleep(Duration::from_millis(50));
+
             match self.visit_block(&node.block, true) {
                 Err(InterruptKind::Break) => break,
                 Err(InterruptKind::Continue) => continue,
